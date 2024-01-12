@@ -20,7 +20,9 @@ sudo apt -y update && sudo apt install -y apt-transport-https curl gnupg patch p
 
 curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key --keyring /usr/share/keyrings/bazel-archive-keyring.gpg add -
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-sudo apt -y update && sudo apt install -y bazel
+# Can't build with bazel 7.0.0, therefore using older version
+sudo apt -y update &&  sudo apt install -y bazel-6.4.0
+sudo update-alternatives --install /usr/bin/bazel bazel /usr/bin/bazel-6.4.0 20
 
 pip3 install -U pip
 pip3 install numpy  # @org_tensorflow requires numpy installation in system
