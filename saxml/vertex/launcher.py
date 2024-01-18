@@ -319,10 +319,7 @@ def main(argv: list[str]):
   del argv
   logging.set_verbosity(logging.INFO)
   
-  print("current dir: " + os.getcwd())
   try:
-    # TODO(lehui): refactor into a launcher script to run http_prediction_server
-    # separately with the grpc server
     http_port, grpc_port = _get_prediction_service_ports()
 
     launch_sax_model_server()
