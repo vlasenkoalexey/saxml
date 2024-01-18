@@ -28,6 +28,12 @@ pytype_strict_binary(
     ],
 )
 
+filegroup(
+    name = "launcher_zip",
+    srcs = [":launcher"],
+    output_group = "python_zip_file"
+)
+
 pytype_strict_library(
     name = "http_prediction_server",
     srcs = ["http_prediction_server.py"],
