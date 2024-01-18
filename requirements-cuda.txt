@@ -232,7 +232,7 @@ jax[cuda,tpu] @ git+https://github.com/google/jax
     #   seqio-nightly
 jax-bitempered-loss==0.0.2
     # via praxis
-jaxlib==0.4.23+cuda12.cudnn89
+jaxlib==0.4.23+cuda11.cudnn86
     # via
     #   chex
     #   clu
