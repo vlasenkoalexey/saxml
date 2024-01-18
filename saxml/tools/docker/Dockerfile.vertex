@@ -85,6 +85,8 @@ RUN sed -i '1s/^/sys.path.append(sys.path.pop(0))\n/' \
 # Build Vertex GPU/CUDA image.
 FROM ${BASE_CONTAINER_CUDA} as base_image_cuda
 
+ENV JAX_PLATFORMS=cuda
+
 # Update CUDA signing key
 RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub
 
@@ -96,6 +98,8 @@ RUN apt -y update && apt install -y --no-install-recommends \
 
 # Build Vertex TPU image.
 FROM ${BASE_CONTAINER_TPU} as base_image_tpu
+
+ENV JAX_PLATFORMS=tpu
 
 RUN set -e
     

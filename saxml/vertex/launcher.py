@@ -69,7 +69,7 @@ _JAX_PROFILER_PORT = flags.DEFINE_integer(
 
 _MODEL_KEY = flags.DEFINE_string(
     name="model_key",
-    default=None,
+    default="/sax/ulm/model",
     help=(
         "Model key of form /sax/<cell>/<model> to identifying the model to"
         " load."
@@ -86,13 +86,24 @@ _MODEL_PATH = flags.DEFINE_string(
     required=False,
 )
 
-_CKPT_PATH = flags.DEFINE_string(
-    name="ckpt_path",
-    default="checkpoint_00000000",
+_CKPT_GCS_PREFIX = flags.DEFINE_string(
+    name="ckpt_gcs_prefix",
+    default="",
     help=(
-        "Checkpoint in the form of `/checkpoint_<steps>` in GCS."
-        "See https://github.com/google/saxml/tree/main?tab=readme-ov-file#use-sax."
+        "GCS bucket that stores checkpoint."
         "AIP_STORAGE_URI environment variable takes a presedence."
+    ),
+    required=False,
+)
+
+_CKPT_PATH_SUFFIX = flags.DEFINE_string(
+    name="ckpt_path_suffix",
+    default="",
+    help=(
+        "Relative path of the checkpoint in the form of `/checkpoint_<steps>` "
+        "in GCS. Prefix bucket should be defined by artifact uri. "
+        "See requirement in "
+        "https://cloud.google.com/vertex-ai/docs/predictions/custom-container-requirements#artifacts"
     ),
     required=False,
 )
@@ -184,44 +195,16 @@ def get_admin_config_cmd_list() -> Sequence[str]:
       f"--fs_root={sax_fs_root}",
       "--alsologtostderr",
   ]
-  print(">>> get_admin_config_cmd_list: " + str(cmd_list))
   return cmd_list
 
-def resolve_model_artifact_path(
-    model_artifact_path_prefix: Optional[str] = '',
-    model_artifact_path_gcs_prefix: Optional[str] = '',
-    model_artifact_suffix: str = '',
-    is_vocab: bool = True,
-) -> str:
-  """Resolve model artifact path for different environments.
-
-  Args:
-    model_artifact_path_prefix: model artifact path prefix.
-    model_artifact_path_gcs_prefix: corresponding model artifact prefix in GCS.
-    model_artifact_suffix: relative path for model artifact.
-    is_vocab: True if this model artifact is vocab, else is for checkpoint path.
-
-  Returns:
-    Resolved model_artifact_path.
-  """
-
-  # AIP_STORAGE_URI specifies the directory that contains a copy of
-  # model artifacts by Vertex Prediction.
-  # (https://cloud.google.com/vertex-ai/docs/predictions/custom-container-requirements#aip-variables)
-  artifact_uri = os.getenv('AIP_STORAGE_URI', '')
-  if artifact_uri:
-    if is_vocab:
-      model_artifact_path = os.path.join(
-          artifact_uri, 'vocabs/sentencepiece.model'
-      )
-    else:
-      model_artifact_path = os.path.join(artifact_uri, model_artifact_suffix)
-
-    return model_artifact_path
 
 def publish_model(model_key: str, model_path: str):
   """Publish SAX model with retry."""
-  ckpt_path = os.getenv("AIP_STORAGE_URI", _CKPT_PATH.value)
+  
+  ckpt_path = os.path.join(
+    os.getenv("AIP_STORAGE_URI", _CKPT_GCS_PREFIX.value),
+    _CKPT_PATH_SUFFIX.value)
+  
   logging.info(
       "Model %s is being published with checkpoint %s", model_key, ckpt_path
   )
@@ -231,6 +214,7 @@ def publish_model(model_key: str, model_path: str):
       return True
     except Exception as err:
       logging.warning("Error publishing model %s on retry %d", err, retry)
+      logging.warning("Error %s type %s", str(err), type(retry))
       time.sleep(_PUBLISH_RETRY_DELAY_SECONDS)
   logging.error("Failed to publish model %s after %d retries", 
                 model_key, _PUBLISH_RETRY_DELAY_SECONDS)
@@ -244,10 +228,8 @@ def _shutdown(return_code: int) -> None:
   tornado.ioloop.IOLoop.current().stop()
 
 
-def launch_sax_model_server():
-  """Start SAX model server."""
-
-  # Run admin_config binary to config SAX admin server
+def configure_admin_server():
+  """Run admin_config binary to config SAX admin server."""
   admin_config_cmd_list = get_admin_config_cmd_list()
   admin_config_process = subprocess.Popen(admin_config_cmd_list)
   logging.info("Configuring SAX admin server pid=%d", admin_config_process.pid)
@@ -260,6 +242,9 @@ def launch_sax_model_server():
   else:
     logging.info("Successfully configured SAX admin server.")
 
+
+def launch_sax_model_server():
+  """Start SAX model server."""
   run_opts = sax_model_server.SAXRunOpts(
       admin_port=_ADMIN_PORT.value,
       grpc_port=_GRPC_PORT.value,
@@ -275,11 +260,6 @@ def launch_sax_model_server():
   sax_server = sax_model_server.SAXModelServer(_shutdown)
   sax_server.run(run_opts)
   logging.info("SAX server started.")
-
-
-'''
-
-  '''
 
 
 def _get_prediction_service_ports():
@@ -322,6 +302,7 @@ def main(argv: list[str]):
   try:
     http_port, grpc_port = _get_prediction_service_ports()
 
+    configure_admin_server()
     launch_sax_model_server()
 
     # publish model using SAX client
