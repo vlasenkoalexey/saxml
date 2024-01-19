@@ -110,8 +110,7 @@ FROM base_image_${JAX_PLATFORMS}
 
 RUN apt install -y --no-install-recommends \
     ca-certificates \
-    python3.10 \
-    cuda-toolkit-11-8
+    python3.10
 
 RUN update-alternatives --install \
     /usr/bin/python3 python3 /usr/bin/python3.10 1
