@@ -205,6 +205,9 @@ def publish_model(model_key: str, model_path: str):
     os.getenv("AIP_STORAGE_URI", _CKPT_GCS_PREFIX.value),
     _CKPT_PATH_SUFFIX.value)
   
+  if ckpt_path.strip() == "":
+    ckpt_path = None
+  
   logging.info(
       "Model %s is being published with checkpoint %s", model_key, ckpt_path
   )
@@ -260,6 +263,7 @@ def launch_sax_model_server():
   sax_server = sax_model_server.SAXModelServer(_shutdown)
   sax_server.run(run_opts)
   logging.info("SAX server started.")
+  return sax_server
 
 
 def _get_prediction_service_ports():
@@ -298,12 +302,14 @@ def _get_prediction_service_ports():
 def main(argv: list[str]):
   del argv
   logging.set_verbosity(logging.INFO)
+  logging.info(">>>>>>>>> Starting Vertex launcher.main")
+  logging.info("os.environ: %s", os.environ)
   
   try:
     http_port, grpc_port = _get_prediction_service_ports()
 
     configure_admin_server()
-    launch_sax_model_server()
+    sax_server = launch_sax_model_server()
 
     # publish model using SAX client
     if not publish_model(_MODEL_KEY.value, _MODEL_PATH.value):
@@ -327,14 +333,16 @@ def main(argv: list[str]):
           grpc_port,
           _MODEL_KEY.value,
           _PREDICTION_TIMEOUT_SECONDS.value
-        )          
-
+        )
+    logging.info("done initializing HTTP and/or gRPC servers")
+    sax_server.wait()
   except Exception as e:  # pylint: disable=broad-except
     logging.exception("Caught exception: %s", e)
     # Need to use os._exit(), instead of sys.exit(), to really exit the
     # launcher and shutdown the whole container because at least one of the
     # launched processes run as non-daemon.
     os._exit(-1)  # pylint: disable=protected-access
+  logging.info(">>>>>>>>> Exiting Vertex launcher.main")
 
 if __name__ == "__main__":
   app.run(main, flags_parser=lambda _args: flags.FLAGS(_args, known_only=True))

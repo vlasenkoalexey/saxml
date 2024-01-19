@@ -44,8 +44,10 @@ class PredictHandler(tornado.web.RequestHandler):
         max_workers=multiprocessing.cpu_count())
 
   async def post(self):
+    logging.info("got prediction request")
     try:
       req = json.loads(self.request.body.decode())
+      logging.info("prediction request body: %s", req)
 
       lm_requests = translate.user_request_to_lm_generate_request(
           req, self.prediction_timeout_seconds
@@ -68,6 +70,7 @@ class PredictHandler(tornado.web.RequestHandler):
 
       self.write(json.dumps(response))
       self.set_status(200)
+      logging.info("prediction success: %s", json.dumps(response))
 
     except (ValueError, json.JSONDecodeError) as e:
       logging.info("Bad request. Error is: %s", str(e))
@@ -92,6 +95,7 @@ class HealthHandler(tornado.web.RequestHandler):
     self.admin_port = admin_port
 
   def get(self):
+    logging.info("got health request")
     # If model loading time takes more than Vertex Prediction timeout,
     # bypass health check handler to return health before model loaded.
     if _BYPASS_HEALTH_CHECK.value:
@@ -102,6 +106,7 @@ class HealthHandler(tornado.web.RequestHandler):
       }
       self.write(json.dumps(success_response))
       self.set_status(200)
+      logging.info("health request _BYPASS_HEALTH_CHECK success")
       return
 
     try:
@@ -122,6 +127,7 @@ class HealthHandler(tornado.web.RequestHandler):
       success_response = {"model_status": {"status": "AVAILABLE"}}
       self.write(json.dumps(success_response))
       self.set_status(200)
+      logging.info("health request success")
       return
 
     except Exception as e:  # pylint: disable=broad-except
@@ -135,6 +141,15 @@ def _make_app(
   model_key: str, 
   prediction_timeout_seconds:int) -> tornado.web.Application:
   # https://cloud.google.com/vertex-ai/docs/predictions/custom-container-requirements
+  predict_handler = (os.getenv("PREDICT_ROUTE")
+    or os.getenv("AIP_PREDICT_ROUTE")
+    or "/predict")
+  health_handler =  (os.getenv("HEALTH_ROUTE")
+    or os.getenv("AIP_HEALTH_ROUTE")
+    or "/health")
+      
+  logging.info("Predict handler: %s", predict_handler)
+  logging.info("Health handler: %s", health_handler)
   return tornado.web.Application([
       (
           os.getenv("PREDICT_ROUTE")
@@ -169,6 +184,7 @@ def run(
   logging.info("tornado server listening on port %d.", http_port)
   webserver_app.listen(http_port)
 
+  logging.info("Tornado loop started")
   tornado.ioloop.IOLoop.current().start()
   logging.info("Tornado server stopped.")
 

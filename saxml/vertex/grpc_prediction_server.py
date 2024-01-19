@@ -141,4 +141,5 @@ def run(grpc_port: int, model_key: str, prediction_timeout_seconds: int):
   server.start()
 
   logging.info("gRPC server listening on port %d.", grpc_port)
-  server.wait_for_termination()    
+  server.wait_for_termination()
+  logging.info("gRPC server stopped")
