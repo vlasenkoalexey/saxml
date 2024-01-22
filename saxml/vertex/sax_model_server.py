@@ -29,8 +29,6 @@ _DEFAULT_FLAGS = (
 _DEFAULT_GPU_FLAGS = []
 
 _DEFAULT_TPU_FLAGS = (
-    "--jax_tpu_async",
-    "--tpu_use_tfrt",
 )
 
 _SUPPORTED_GPU_PLATFORM_CHIPS = frozenset(
