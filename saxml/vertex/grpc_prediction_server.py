@@ -1,19 +1,19 @@
 """gRPC prediction server for SAX."""
 
+import concurrent
 import logging
+import multiprocessing
 import queue
 import threading
 from typing import Iterator
 
 import grpc
-#from grpc_health.v1 import health_pb2
 from saxml.client.python import sax
 from saxml.protobuf import lm_pb2
 
 from saxml.vertex import constants
 from saxml.vertex import prediction_service_pb2
 from saxml.vertex import prediction_service_pb2_grpc
-#from google3.util.task.python import error
 
 
 class GrpcPredictionService(
@@ -28,7 +28,6 @@ class GrpcPredictionService(
       user_request_timeout: int = constants.DEFAULT_PREDICTION_TIMEOUT_SECONDS,
   ):
     self._server = server
-    #server.set_status(health_pb2.HealthCheckResponse.SERVING)
     logging.info("Starting %s gRPC server.", self.__class__.__name__)
     self._model_key = model_key
     model = sax.Model(self._model_key)
@@ -55,10 +54,6 @@ class GrpcPredictionService(
     try:
       yield from self._generate_stream(request.text, options)
       context.set_code(grpc.StatusCode.OK)
-
-    #except error.StatusNotOk as e:
-    #  logging.warning("GenerateStream failed with %s", e)
-    #  context.set_code(grpc.StatusCode.INTERNAL)
 
     except Exception as e:  # pylint: disable=broad-except
       logging.exception("Caught exception: %s", e)

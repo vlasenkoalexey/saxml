@@ -30,7 +30,6 @@ from typing import Any, Awaitable, Callable, Deque, Dict, List, Mapping, Optiona
 import uuid
 
 from absl import logging
-from enum import Enum
 import grpc
 from grpc_reflection.v1alpha import reflection
 import numpy as np
@@ -98,7 +97,7 @@ def _maybe_all_cancelled(
 
 
 @enum.unique
-class MethodName(str, Enum):
+class MethodName(str, enum.Enum):
   """Sax method types."""
 
   # Sax internal methods

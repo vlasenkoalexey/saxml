@@ -7,7 +7,7 @@ import "saxml/protobuf/lm.proto";
 
 message PredictRequest {
   string text = 1;
-  //optional .sax.ExtraInputs extra_inputs = 2;
+  optional .sax.ExtraInputs extra_inputs = 2;
 }
 
 service PredictionService {

@@ -22,12 +22,6 @@ pybind_extension(
     ],
 )
 
-py_library(
-    name = "sax",
-    data = [":sax.so"],
-    visibility = ["//visibility:public"],
-)
-
 # API wrapper on user facing C++ API for python API (pybind11 with sax.cc).
 pybind_library(
     name = "wrapper",

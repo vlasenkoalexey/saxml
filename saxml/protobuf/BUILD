@@ -25,7 +25,12 @@ package_group(
     includes = [
         "//saxml:internal",
     ],
-    packages = ["//research/bigpicture/llm_api_use/sax/..."],
+    packages = [
+        "//java/com/google/vr/multimodal/...",
+        "//javatests/com/google/vr/multimodal/...",
+        "//research/bigpicture/llm_api_use/sax/...",
+        "//vr/multimodal/...",
+    ],
 )
 
 proto_library(
@@ -55,6 +60,12 @@ py_proto_library(
 
 java_proto_library(
     name = "common_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":common_proto"],
+)
+
+kt_jvm_proto_library(
+    name = "common_kt_proto",
     visibility = ["//visibility:public"],
     deps = [":common_proto"],
 )

@@ -33,7 +33,7 @@ RUN echo 'filegroup(\n\
     output_group = "python_zip_file",\n\
 )\n' >> /saxml/saxml/server/BUILD && \
     bazel build saxml/server:server_zip
-    
+
 # Package the model server binary.
 RUN mkdir /model-server-bin && \
     unzip /saxml/bazel-bin/saxml/server/server.zip && \
@@ -47,7 +47,7 @@ RUN sed -i '1s/^/sys.path.append(sys.path.pop(0))\n/' \
     /model-server-bin/server.runfiles/__main__/saxml/server/server.py && \
     sed -i '1s/^/import sys\n/' \
     /model-server-bin/server.runfiles/__main__/saxml/server/server.py
-    
+
 #RUN echo '\n\nfilegroup(\n\
 #    name = "launcher_zip",\n\
 #    srcs = [":launcher"],\n\

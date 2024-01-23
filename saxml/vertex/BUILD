@@ -1,12 +1,10 @@
-load("//saxml:saxml.bzl", "py_strict_test", "pytype_strict_binary", "pytype_strict_library")
-
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-
 load(
     "//saxml:saxml.bzl",
     "proto_library",
     "py_grpc_library",
     "py_proto_library",
+    "pytype_strict_binary",
+    "pytype_strict_library",
 )
 
 pytype_strict_binary(
@@ -16,14 +14,36 @@ pytype_strict_binary(
     deps = [
         ":constants",
         ":grpc_prediction_server",
-        ":sax_model_server",
         ":http_prediction_server",
+        ":launcher_lib",
+        ":sax_model_server",
         ":translate",
-        "//third_party/py/grpcio",
         "//third_party/py/absl-py:app",
         "//third_party/py/absl-py/flags",
         "//third_party/py/absl-py/logging",
+        "//third_party/py/grpcio",
+        "//third_party/py/tornado",
+    ],
+)
+
+# Workaround since pytype_strict_binary doesn't support pybind_deps
+pytype_strict_library(
+    name = "launcher_lib",
+    srcs = ["launcher.py"],
+    pybind_deps = [
         "//saxml/client/python:sax",
+    ],
+    srcs_version = "PY3",
+    deps = [
+        ":constants",
+        ":grpc_prediction_server",
+        ":http_prediction_server",
+        ":sax_model_server",
+        ":translate",
+        "//third_party/py/absl-py:app",
+        "//third_party/py/absl-py/flags",
+        "//third_party/py/absl-py/logging",
+        "//third_party/py/grpcio",
         "//third_party/py/tornado",
     ],
 )
@@ -31,22 +51,25 @@ pytype_strict_binary(
 filegroup(
     name = "launcher_zip",
     srcs = [":launcher"],
-    output_group = "python_zip_file"
+    output_group = "python_zip_file",
 )
 
 pytype_strict_library(
     name = "http_prediction_server",
     srcs = ["http_prediction_server.py"],
+    pybind_deps = [
+        "//saxml/client/python:sax",
+    ],
     srcs_version = "PY3",
     deps = [
         ":constants",
         ":sax_model_server",
         ":translate",
-        "//third_party/py/grpcio",
-        "//third_party/py/absl-py/logging",
-        "//saxml/client/python:sax",
         "//saxml/protobuf:admin_py_pb2",
         "//saxml/protobuf:admin_py_pb2_grpc",
+        "//third_party/py/absl-py/flags",
+        "//third_party/py/absl-py/logging",
+        "//third_party/py/grpcio",
         "//third_party/py/tornado",
     ],
 )
@@ -64,10 +87,11 @@ proto_library(
 py_proto_library(
     name = "prediction_service_py_pb2",
     api_version = 2,
-    deps = [":prediction_service_proto"],
     extra_deps = [
-      "//saxml/protobuf:common_py_pb2", 
-      "//saxml/protobuf:lm_py_pb2"],
+        "//saxml/protobuf:common_py_pb2",
+        "//saxml/protobuf:lm_py_pb2",
+    ],
+    deps = [":prediction_service_proto"],
 )
 
 py_grpc_library(
@@ -79,18 +103,16 @@ py_grpc_library(
 pytype_strict_library(
     name = "grpc_prediction_server",
     srcs = ["grpc_prediction_server.py"],
+    pybind_deps = [
+        "//saxml/client/python:sax",
+    ],
     srcs_version = "PY3",
     deps = [
         ":constants",
+        ":prediction_service_py_pb2",
         ":prediction_service_py_pb2_grpc",
-        ":sax_model_server",
-        ":translate",
+        "//saxml/protobuf:lm_py_pb2",
         "//third_party/py/grpcio",
-        "//third_party/py/absl-py/flags",
-        "//third_party/py/absl-py/logging",
-        "//saxml/client/python:sax",
-        "//saxml/protobuf:admin_py_pb2",
-        "//saxml/protobuf:admin_py_pb2_grpc",
     ],
 )
 
@@ -107,31 +129,15 @@ pytype_strict_library(
 pytype_strict_library(
     name = "translate",
     srcs = ["translate.py"],
+    pybind_deps = [
+        "//saxml/client/python:sax",
+    ],
     deps = [
         ":constants",
-        "//saxml/client/python:sax",
     ],
 )
 
 pytype_strict_library(
     name = "constants",
     srcs = ["constants.py"],
-)
-
-pybind_extension(
-    name = "my_pb_mod",  # This name is not actually created!
-    srcs = ["my_pb_mod.cc"],
-)
-
-py_library(
-    name = "my_pb_mod",
-    data = [":my_pb_mod.so"],
-)
-
-py_test(
-    name = "example_test",
-    srcs = ["example_test.py"],
-    deps = [
-        ":my_pb_mod"
-    ],
 )

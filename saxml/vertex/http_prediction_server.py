@@ -4,21 +4,19 @@ import concurrent
 import json
 import multiprocessing
 import os
-import subprocess
-from typing import Sequence, Optional
+
+from absl import flags
+from absl import logging
+
 import grpc
 from saxml.client.python import sax
 from saxml.protobuf import admin_pb2
 from saxml.protobuf import admin_pb2_grpc
-
-from absl import flags
-from absl import logging
-import time
+from saxml.vertex import constants
+from saxml.vertex import translate
 import tornado.ioloop
 import tornado.web
 
-from saxml.vertex import constants
-from saxml.vertex import translate
 
 _BYPASS_HEALTH_CHECK = flags.DEFINE_bool(
     name="bypass_health_check",
@@ -29,6 +27,7 @@ _BYPASS_HEALTH_CHECK = flags.DEFINE_bool(
         "used for debugging purposes and not in production use."
     )
 )
+
 
 class PredictHandler(tornado.web.RequestHandler):
   """HTTP handler for prediction requests."""
@@ -137,17 +136,31 @@ class HealthHandler(tornado.web.RequestHandler):
 
 
 def _make_app(
-  admin_port: int, 
-  model_key: str, 
-  prediction_timeout_seconds:int) -> tornado.web.Application:
-  # https://cloud.google.com/vertex-ai/docs/predictions/custom-container-requirements
-  predict_handler = (os.getenv("PREDICT_ROUTE")
-    or os.getenv("AIP_PREDICT_ROUTE")
-    or "/predict")
-  health_handler =  (os.getenv("HEALTH_ROUTE")
-    or os.getenv("AIP_HEALTH_ROUTE")
-    or "/health")
-      
+    admin_port: int,
+    model_key: str,
+    prediction_timeout_seconds: int) -> tornado.web.Application:
+  """Makes the tornado web application.
+
+  Args:
+    admin_port: SAX admin port.
+    model_key: model key.
+    prediction_timeout_seconds: prediction timeout in seconds.
+
+  Returns:
+    Tornado web application.
+
+  """
+    # pylint: disable=g-line-too-long
+    # https://cloud.google.com/vertex-ai/docs/predictions/custom-container-requirements
+  predict_handler = (
+      os.getenv("PREDICT_ROUTE")
+      or os.getenv("AIP_PREDICT_ROUTE")
+      or "/predict")
+  health_handler = (
+      os.getenv("HEALTH_ROUTE")
+      or os.getenv("AIP_HEALTH_ROUTE")
+      or "/health")
+
   logging.info("Predict handler: %s", predict_handler)
   logging.info("Health handler: %s", health_handler)
   return tornado.web.Application([
@@ -156,7 +169,8 @@ def _make_app(
           or os.getenv("AIP_PREDICT_ROUTE")
           or "/predict",
           PredictHandler,
-          dict(model_key=model_key, prediction_timeout_seconds=prediction_timeout_seconds),
+          dict(model_key=model_key,
+               prediction_timeout_seconds=prediction_timeout_seconds),
       ),
       (
           os.getenv("HEALTH_ROUTE")
@@ -169,17 +183,17 @@ def _make_app(
 
 
 def run(
-  http_port: int, 
-  admin_port: int, 
-  model_key: str,
-  prediction_timeout_seconds: int
+    http_port: int,
+    admin_port: int,
+    model_key: str,
+    prediction_timeout_seconds: int
 ):
   """Run the tornado http prediction server."""
 
   webserver_app = _make_app(
-    admin_port=admin_port, 
-    model_key=model_key,
-    prediction_timeout_seconds=prediction_timeout_seconds
+      admin_port=admin_port,
+      model_key=model_key,
+      prediction_timeout_seconds=prediction_timeout_seconds
   )
   logging.info("tornado server listening on port %d.", http_port)
   webserver_app.listen(http_port)

@@ -15,9 +15,8 @@ import threading
 from typing import AnyStr, Callable, Optional, List, Sequence
 
 from absl import logging
-from tornado import process as tornado_process
-
 from saxml.vertex import constants
+from tornado import process as tornado_process
 
 _DEFAULT_FLAGS = (
     "--nodeterministic_rng",
@@ -28,14 +27,14 @@ _DEFAULT_FLAGS = (
 
 _DEFAULT_GPU_FLAGS = []
 
-_DEFAULT_TPU_FLAGS = (
-)
+_DEFAULT_TPU_FLAGS = []
 
 _SUPPORTED_GPU_PLATFORM_CHIPS = frozenset(
-  ["a100", "p100", "v100", "l4", "t4", "h100"])
+    ["a100", "p100", "v100", "l4", "t4", "h100"])
 _SUPPORTED_TPU_PLATFORM_CHIPS = frozenset(
-  ["tpuv2", "tpuv3", "tpuv4", "tpuv4i", "tpuv5e"]
+    ["tpuv2", "tpuv3", "tpuv4", "tpuv4i", "tpuv5e"]
 )
+
 
 @dataclasses.dataclass
 class SAXRunOpts:
@@ -74,7 +73,7 @@ class SAXRunOpts:
     Returns:
       Shell command to execute.
     """
-    if self.platform_chip == 'cpu':
+    if self.platform_chip == "cpu":
       return self._get_cpu_cmd_list()
     elif self.is_platform_chip_gpu():
       return self._get_gpu_cmd_list()
@@ -107,7 +106,7 @@ class SAXRunOpts:
     if self.sax_extra_args:
       cmd_args += self.sax_extra_args
     return cmd_args
-  
+
   def _get_cpu_cmd_list(self) -> Sequence[str]:
     """Builds a command to start CPU SAX Model Server binary.
 
@@ -119,7 +118,7 @@ class SAXRunOpts:
         constants.DEFAULT_SAX_SERVING_PATH]
 
     cmd_list += self._get_common_cmd_args()
-    return cmd_list  
+    return cmd_list
 
   def _get_gpu_cmd_list(self) -> Sequence[str]:
     """Builds a command to start GPU SAX Model Server binary.
@@ -134,7 +133,6 @@ class SAXRunOpts:
     cmd_list += _DEFAULT_GPU_FLAGS
     cmd_list += self._get_common_cmd_args()
     return cmd_list
-
 
   def _get_tpu_cmd_list(self) -> Sequence[str]:
     """Builds a command to start TPU SAX Model Server binary.
@@ -175,10 +173,15 @@ class SAXModelServer:
 
     Returns:
       Process exit code.
+
+    Raises:
+      ValueError if process is not initialized.
     """
     popen = None
     with self._lock:
       popen = self._popen
+    if popen is None:
+      raise ValueError("Popen is not initialized.")
     exit_code = popen.wait()
     logging.info("SAX terminated with exit code: %d.", exit_code)
     return exit_code

@@ -1,24 +1,22 @@
 """Launcher for SAX Model Server, HTTP and GRPC servers."""
 
 import concurrent
-import json
-import multiprocessing
 import os
 import subprocess
-from typing import Sequence, Optional
+import time
+from typing import Sequence
 
 from absl import app
 from absl import flags
 from absl import logging
-import grpc
-import time
 from saxml.client.python import sax
-
 from saxml.vertex import constants
 from saxml.vertex import grpc_prediction_server
 from saxml.vertex import http_prediction_server
 from saxml.vertex import sax_model_server
-from saxml.vertex import translate
+import tornado.ioloop
+import tornado.web
+
 
 _PORT = flags.DEFINE_integer(
     name="port",
@@ -200,29 +198,28 @@ def get_admin_config_cmd_list() -> Sequence[str]:
 
 def publish_model(model_key: str, model_path: str):
   """Publish SAX model with retry."""
-  
+
   ckpt_path = os.path.join(
-    os.getenv("AIP_STORAGE_URI", _CKPT_GCS_PREFIX.value),
-    _CKPT_PATH_SUFFIX.value)
-  
-  if ckpt_path.strip() == "":
+      os.getenv("AIP_STORAGE_URI", _CKPT_GCS_PREFIX.value),
+      _CKPT_PATH_SUFFIX.value)
+
+  if not ckpt_path.strip():
     ckpt_path = None
-  
+
   logging.info(
       "Model %s is being published with checkpoint %s", model_key, ckpt_path
   )
-  for retry in range(0,_PUBLISH_RETRIES):
+  for retry in range(0, _PUBLISH_RETRIES):
     try:
       sax.Publish(model_key, model_path, ckpt_path, 1)
       return True
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
       logging.warning("Error publishing model %s on retry %d", err, retry)
       logging.warning("Error %s type %s", str(err), type(retry))
       time.sleep(_PUBLISH_RETRY_DELAY_SECONDS)
-  logging.error("Failed to publish model %s after %d retries", 
+  logging.error("Failed to publish model %s after %d retries",
                 model_key, _PUBLISH_RETRY_DELAY_SECONDS)
   return False
-
 
 
 def _shutdown(return_code: int) -> None:
@@ -304,7 +301,7 @@ def main(argv: list[str]):
   logging.set_verbosity(logging.INFO)
   logging.info(">>>>>>>>> Starting Vertex launcher.main")
   logging.info("os.environ: %s", os.environ)
-  
+
   try:
     http_port, grpc_port = _get_prediction_service_ports()
 
@@ -313,7 +310,7 @@ def main(argv: list[str]):
 
     # publish model using SAX client
     if not publish_model(_MODEL_KEY.value, _MODEL_PATH.value):
-      logging.error("Failed to publish model %s from %s", 
+      logging.error("Failed to publish model %s from %s",
                     _MODEL_KEY.value, _MODEL_PATH.value)
       os._exit(-1)
 
@@ -321,18 +318,18 @@ def main(argv: list[str]):
       if http_port:
         logging.info("Starting HTTP server at port: %d", http_port)
         executor.submit(
-          http_prediction_server.run, 
-          http_port, 
-          _ADMIN_PORT.value, 
-          _MODEL_KEY.value,
-          _PREDICTION_TIMEOUT_SECONDS.value
+            http_prediction_server.run,
+            http_port,
+            _ADMIN_PORT.value,
+            _MODEL_KEY.value,
+            _PREDICTION_TIMEOUT_SECONDS.value
         )
       if grpc_port:
         executor.submit(
-          grpc_prediction_server.run, 
-          grpc_port,
-          _MODEL_KEY.value,
-          _PREDICTION_TIMEOUT_SECONDS.value
+            grpc_prediction_server.run,
+            grpc_port,
+            _MODEL_KEY.value,
+            _PREDICTION_TIMEOUT_SECONDS.value
         )
     logging.info("done initializing HTTP and/or gRPC servers")
     sax_server.wait()
