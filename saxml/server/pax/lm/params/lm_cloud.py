@@ -264,13 +264,26 @@ class LLaMA7BFP16TPUv5e(LLaMA7BFP16):
 
   BATCH_SIZE = [1]
   BUCKET_KEYS = [128]
-  MAX_DECODE_STEPS = [32]
+  MAX_DECODE_STEPS = [1024]
 
   ICI_MESH_SHAPE = [1, 1, 4]
 
   @property
   def test_mode(self) -> bool:
     return False
+  
+@servable_model_registry.register
+class LLaMA7BFP16StreamingX4(LLaMA7BFP16):
+  BATCH_SIZE = [1]
+  BUCKET_KEYS = [128]
+  MAX_DECODE_STEPS = [1024]
+
+  ICI_MESH_SHAPE = [1, 1, 4]
+  ENABLE_GENERATE_STREAM = True
+
+  @property
+  def test_mode(self) -> bool:
+    return False  
 
 
 @servable_model_registry.register
