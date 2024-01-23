@@ -244,6 +244,25 @@ go_grpc_library(
     deps = [":custom_go_proto"],
 )
 
+java_proto_library(
+    name = "custom_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":custom_proto"],
+)
+
+kt_jvm_proto_library(
+    name = "custom_kt_proto",
+    visibility = ["//visibility:public"],
+    deps = [":custom_proto"],
+)
+
+kt_jvm_stubby_library(
+    name = "custom_kt_stubby",
+    srcs = [":custom_proto"],
+    visibility = [":sax_rpc_visibility"],
+    deps = [":custom_kt_proto"],
+)
+
 proto_library(
     name = "lm_proto",
     srcs = ["lm.proto"],
@@ -262,7 +281,9 @@ rpc_endpoint_interface(
 
 cc_proto_library(
     name = "lm_cc_proto",
-    visibility = ["//saxml:internal"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [":lm_proto"],
 )
 
@@ -306,6 +327,19 @@ go_grpc_library(
     srcs = [":lm_proto"],
     extra_deps = [":common_go_proto"],
     deps = [":lm_go_proto"],
+)
+
+java_proto_library(
+    name = "lm_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":lm_proto"],
+)
+
+kt_jvm_stubby_library(
+    name = "lm_kt_stubby",
+    srcs = [":lm_proto"],
+    visibility = [":sax_rpc_visibility"],
+    deps = [":lm_kt_proto"],
 )
 
 proto_library(
@@ -361,6 +395,25 @@ go_grpc_library(
     srcs = [":audio_proto"],
     extra_deps = [":common_go_proto"],
     deps = [":audio_go_proto"],
+)
+
+java_proto_library(
+    name = "audio_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":audio_proto"],
+)
+
+kt_jvm_proto_library(
+    name = "audio_kt_proto",
+    visibility = ["//visibility:public"],
+    deps = [":audio_proto"],
+)
+
+kt_jvm_stubby_library(
+    name = "audio_kt_stubby",
+    srcs = [":audio_proto"],
+    visibility = [":sax_rpc_visibility"],
+    deps = [":audio_kt_proto"],
 )
 
 proto_library(
@@ -419,6 +472,25 @@ go_grpc_library(
     deps = [":vision_go_proto"],
 )
 
+java_proto_library(
+    name = "vision_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":vision_proto"],
+)
+
+kt_jvm_proto_library(
+    name = "vision_kt_proto",
+    visibility = ["//visibility:public"],
+    deps = [":vision_proto"],
+)
+
+kt_jvm_stubby_library(
+    name = "vision_kt_stubby",
+    srcs = [":vision_proto"],
+    visibility = [":sax_rpc_visibility"],
+    deps = [":vision_kt_proto"],
+)
+
 proto_library(
     name = "multimodal_proto",
     srcs = ["multimodal.proto"],
@@ -474,6 +546,13 @@ go_grpc_library(
     srcs = [":multimodal_proto"],
     extra_deps = [":common_go_proto"],
     deps = [":multimodal_go_proto"],
+)
+
+kt_jvm_stubby_library(
+    name = "multimodal_kt_stubby",
+    srcs = [":multimodal_proto"],
+    visibility = [":sax_rpc_visibility"],
+    deps = [":multimodal_kt_proto"],
 )
 
 proto_library(
